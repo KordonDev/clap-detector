@@ -26,14 +26,14 @@
  THE SOFTWARE.
  */
 
-var exec = require('child_process').exec;
-var fs = require('fs');
-var appRoot = require('app-root-path');
-var os = require('os');
+const exec = require('child_process').exec;
+const fs = require('fs');
+const appRoot = require('app-root-path');
+const os = require('os');
 
-var clapDetector = (function() {
+const clapDetector = (function() {
     /* DEFAULT CONFIG */
-    var CONFIG = {
+    const CONFIG = {
         AUDIO_SOURCE: os.type() === "Darwin" // microphone
         ? 'coreaudio default'
         : 'alsa hw:1,0',
@@ -45,10 +45,10 @@ var clapDetector = (function() {
         MAX_HISTORY_LENGTH: 10 // no need to maintain big history
     };
 
-    var paused = false;
+    let paused = false;
 
     /* Callback for events */
-    var EVENTS = {
+    const EVENTS = {
         clap: {
             fn: null,
         },
@@ -56,17 +56,16 @@ var clapDetector = (function() {
     };
 
     /* History of claps */
-    var clapsHistory = [];
+    let clapsHistory = [];
 
     function _handleMultipleClapsEvent(props) {
-        console.warn(props);
         // Retrieve latest claps
-        var latestClaps = clapsHistory.slice(props.num * -1);
+        const latestClaps = clapsHistory.slice(props.num * -1);
         if(latestClaps.length === props.num) {
             // Check that the delay between the last clap and the first is inferior to what was requested by user
-            var lastClap = latestClaps.slice(-1)[0];
-            var firstClap = latestClaps.slice(0,1)[0];
-            var delay = lastClap.time - firstClap.time;
+            const lastClap = latestClaps.slice(-1)[0];
+            const firstClap = latestClaps.slice(0,1)[0];
+            const delay = lastClap.time - firstClap.time;
             if(delay < props.maxDelay) {
                 props.fn(delay);
             }
@@ -83,15 +82,15 @@ var clapDetector = (function() {
 
     /* Listen */
     function _listen() {
-        var args = [];
-        var body  = '';
+        const args = [];
+        let body  = '';
 
-        var filename = appRoot + '/input.wav';
+        const filename = appRoot + '/input.wav';
 
         // Listen for sound
-        var cmd = 'sox -t ' + CONFIG.AUDIO_SOURCE + ' ' + filename + ' silence 1 0.0001 '  + CONFIG.DETECTION_PERCENTAGE_START + ' 1 0.1 ' + CONFIG.DETECTION_PERCENTAGE_END + ' −−no−show−progress stat';
+        const cmd = 'sox -t ' + CONFIG.AUDIO_SOURCE + ' ' + filename + ' silence 1 0.0001 '  + CONFIG.DETECTION_PERCENTAGE_START + ' 1 0.1 ' + CONFIG.DETECTION_PERCENTAGE_END + ' −−no−show−progress stat';
        
-        var child = exec(cmd);
+        const child = exec(cmd);
 
         child.stderr.on("data", function(buf){ 
             body += buf; 
@@ -99,7 +98,7 @@ var clapDetector = (function() {
 
         child.on("exit", function() {
             
-            var stats = _parse(body);
+            const stats = _parse(body);
             if(_isClap(stats)) {
 
                 clapsHistory.push({
@@ -123,7 +122,7 @@ var clapDetector = (function() {
 
     function _isClap(stats) {
 
-        var duration = stats['Length (seconds)'],
+        const duration = stats['Length (seconds)'],
         rms      = stats['RMS amplitude'],
         max      = stats['Maximum amplitude'];
 
@@ -132,14 +131,18 @@ var clapDetector = (function() {
 
     function _parse(body) {
         body = body.replace(new RegExp("[ \\t]+", "g") , " "); //sox use spaces to align output
-        var split = new RegExp("^(.*):\\s*(.*)$", "mg"), match, dict = {}; //simple key:value
-        while(match = split.exec(body)) dict[match[1]] = parseFloat(match[2]);
+        const split = new RegExp("^(.*):\\s*(.*)$", "mg");
+        let match;
+        const dict = {}; //simple key:value
+        while (match = split.exec(body)) {
+            dict[match[1]] = parseFloat(match[2]);
+        }
         return dict;
     }
 
     function _config(props) {
         if(props) {
-            CONFIG = Object.assign(CONFIG, props);
+            Object.assign(CONFIG, props);
         }
     }
 
@@ -152,14 +155,14 @@ var clapDetector = (function() {
         },
 
         //1 clap
-        onClap: function (cb) {
+        onClap: (cb) => {
             if(cb) {
                 EVENTS.clap.fn = cb;
             }
         },
 
         // multiples claps
-        onClaps: function (num, maxDelay, cb) {
+        onClaps: (num, maxDelay, cb) => {
             if(num && maxDelay && cb) {
                 EVENTS.multipleClaps.push({
                     num: num,
@@ -167,23 +170,16 @@ var clapDetector = (function() {
                     fn: cb
                 });
             }
-
         },
 
         // pause
-        pause: function() {
-            paused = true;
-        },
+        pause: () => paused = true,
 
         // resume
-        resume: function() {
-            paused = false;
-        },
+        resume: () => paused = false,
 
         // updateConfig
-        updateConfig: function(props) {
-            _config(props);
-        }
+        updateConfig: (props) => _config(props)
     };
 })();
 
