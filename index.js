@@ -26,8 +26,6 @@
  THE SOFTWARE.
  */
 
-var _ = require('lodash');
-var Q = require('q');
 var exec = require('child_process').exec;
 var fs = require('fs');
 var appRoot = require('app-root-path');
@@ -61,12 +59,13 @@ var clapDetector = (function() {
     var clapsHistory = [];
 
     function _handleMultipleClapsEvent(props) {
+        console.warn(props);
         // Retrieve latest claps
-        var latestClaps = _.takeRight(clapsHistory, props.num);
+        var latestClaps = clapsHistory.slice(props.num * -1);
         if(latestClaps.length === props.num) {
             // Check that the delay between the last clap and the first is inferior to what was requested by user
-            var lastClap = _.last(latestClaps);
-            var firstClap = _.first(latestClaps);
+            var lastClap = latestClaps.slice(-1)[0];
+            var firstClap = latestClaps.slice(0,1)[0];
             var delay = lastClap.time - firstClap.time;
             if(delay < props.maxDelay) {
                 props.fn(delay);
@@ -78,9 +77,7 @@ var clapDetector = (function() {
     function _handleMultipleClaps() {
         // If callback registered, handle them
         if(EVENTS.multipleClaps.length > 0) {
-            _.forEach(EVENTS.multipleClaps,  function(cbProps) {
-                _handleMultipleClapsEvent(cbProps);
-            });
+            EVENTS.multipleClaps.forEach(_handleMultipleClapsEvent)
         }
     }
 
@@ -106,12 +103,12 @@ var clapDetector = (function() {
             if(_isClap(stats)) {
 
                 clapsHistory.push({
-                    id  : (clapsHistory.length) ? _.last(clapsHistory, 1).id + 1 : 1,
+                    id  : (clapsHistory.length) ? clapsHistory.slice(-1)[0].id + 1 : 1,
                     time: new Date().getTime()
                 });
 
                 // Clean history
-                clapsHistory = _.takeRight(clapsHistory, CONFIG.MAX_HISTORY_LENGTH); // no need to maintain a big history
+                clapsHistory = clapsHistory.slice(CONFIG.MAX_HISTORY_LENGTH * -1); // no need to maintain a big history
 
                 if(EVENTS.clap.fn) {
                     EVENTS.clap.fn(clapsHistory);
@@ -142,7 +139,7 @@ var clapDetector = (function() {
 
     function _config(props) {
         if(props) {
-            _.assign(CONFIG, props);
+            CONFIG = Object.assign(CONFIG, props);
         }
     }
 
