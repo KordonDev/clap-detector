@@ -1,10 +1,9 @@
-Clap detection module for node js
+Audio detection module for node js
 ===
 
 ## Synopsis
 
-ClapDetector is a hand clap detection module for nodejs (iojs). It detects a clap or a series of claps and allows you to trigger callbacks whenever these events happen.
-I created this module for my personal assistant project on a Raspberry Pi (raspbian). The clap detection allows me to activate the assistant whenever I need it (and prevents it from continuously listening out for instructions or interpreting random noises as instructions)
+AudioDetecor is a audio detection module for nodejs. It can detects short audios like claps or peeping and allows you to trigger callbacks whenever these events happen. It can also trigger on a sequence of detected audios.
 
 ## Requirements
 This module works on linux based OS (raspbian, Ubuntu, Debian...) using alsa for audio and a working microphone or Mac OS X using coreaudio.
@@ -30,41 +29,17 @@ npm install --save clap-detector
 
 ## Usage
 
+An example how to use this is in [`clapExample.js`](https://github.com/KordonDev/clap-detector/blob/master/clapExample.js)
+
 There are four public methods you can use:
-- clapDetector.start(clapConfig);
-=> this needs to be called to initialize clap detection. The clapConfig object is not mandatory but you can use it to overwrite the default configuration (see next section)
-- clapDetector.onClap(yourcallbackfunctionhere)
-=> register a callback that will be triggered whenever a clap of hand is detected. Your callback can accept an array of ids counting each clap and the corresponding timestamp.
-- clapDetector.onClaps(numberOfClaps, delay, yourcallbackfunctionhere)
-=> register a callback that will be triggered whenever a series of claps (determined by the number of claps) is detected within the period of time you've specified (delay).
-- clapDetector.updateConfig(clapConfig);
+- audioDetector.start(config);
+=> this needs to be called to initialize audio detection. The config object is mandatory to configure the detection of the audio.
+- audioDetector.onDetecton(yourcallbackfunctionhere)
+=> register a callback that will be triggered whenever the specified audio is detected. Your callback can accept an array of ids counting each clap and the corresponding timestamp.
+- audioDetector.onDetections(numberOfDetections, delay, yourcallbackfunctionhere)
+=> register a callback that will be triggered whenever a series of audio detections (determined by the number of detections) is detected within the period of time you've specified (delay).
+- audioDetector.updateConfig(config);
 => updates configuration on-the-fly.
-
-```bash
-// Require the module
-var clapDetector = require('clap-detector');
-
-// Define configuration
-var clapConfig = {
-   AUDIO_SOURCE: 'alsa hw:1,0'// default for linux
-};
-
-// Start clap detection
-clapDetector.start(clapConfig);
-
-// Register on clap event
-clapDetector.onClap(function(history) {
-    //console.log('your callback code here ', history);
-});
-
-// Register to a series of 3 claps occuring within 2 seconds
-clapDetector.onClaps(3, 2000, function(delay) {
-    //console.log('your callback code here ');
-});
-
-// Update the configuration
-clapDetector.updateConfig({CLAP_ENERGY_THRESHOLD: 0.2});
-```
 
 ## Configuration
 
@@ -76,23 +51,42 @@ var CONFIG = {
         AUDIO_SOURCE: 'hw:1,0', // this is your microphone input. If you don't know it you can refer to this thread (http://www.voxforge.org/home/docs/faq/faq/linux-how-to-determine-your-audio-cards-or-usb-mics-maximum-sampling-rate)
         DETECTION_PERCENTAGE_START : '5%', // minimum noise percentage threshold necessary to start recording sound
         DETECTION_PERCENTAGE_END: '5%',  // minimum noise percentage threshold necessary to stop recording sound
-        CLAP_AMPLITUDE_THRESHOLD: 0.7, // minimum amplitude threshold to be considered as clap
-        CLAP_ENERGY_THRESHOLD: 0.3,  // maximum energy threshold to be considered as clap
         MAX_HISTORY_LENGTH: 10 // all claps are stored in history, this is its max length
+        AUDIO_DETECTION: { // all these configuration is the output from sox, you can read about it in the sox man page
+               MAX_DURATION: null,
+ 45             MIN_DURATION: null,
+ 46             MAX_MAXIMUM_AMPLITUDE: null,
+ 47             MIN_MAXIMUM_AMPLITUDE: null,
+ 48             MAX_MINIMUM_AMPLITUDE: null,
+ 49             MIN_MINIMUM_AMPLITUDE: null,
+ 50             MAX_MID_AMPLITUDE: null,
+ 51             MIN_MID_AMPLITUDE: null,
+ 52             MAX_MEAN_NORM: null,
+ 53             MIN_MEAN_NORM: null,
+ 54             MAX_MEAN_AMPLITUDE: null,
+ 55             MIN_MEAN_AMPLITUDE: null,
+ 56             MIN_RMS_AMPLITUDE: null,
+ 57             MAX_RMS_AMPLITUDE: null,
+ 58             MAX_MAXIMUM_DELTA: null,
+ 59             MIN_MAXIMUM_DELTA: null,
+ 60             MAX_MINIMUM_DELTA: null,
+ 61             MIN_MINIMUM_DELTA: null,
+ 62             MAX_MEAN_DELTA: null,
+ 63             MIN_MEAN_DELTA: null,
+ 64             MAX_RMS_DELTA: null,
+ 65             MIN_RMS_DELTA: null,
+ 66             MAX_FREQUENCY: null,
+ 67             MIN_FREQUENCY: null,
+ 68             MAX_VOLUME_ADJUSTMENT: null,
+ 69             MIN_VOLUME_ADJUSTMENT: null, 
+        }
     };
 ```
 
-If you wish to improve the clap detection you can fiddle with the CLAP_AMPLITUDE_THRESHOLD and CLAP_ENERGY_THRESHOLD values. Depending on your microphone these might need to be modified.
+To find your configuration for your audio, use sox to generate the stats and find suitable parameters for you
 
-## Tests
-
-These will be added soon. Please do not hesitate to add some !
-
-## About the Author
-
-I am a full-stack Javascript developer based in Lyon, France.
-
-[Check out my website](http://www.thomschell.com)
+## Fork
+This is a fork of the [clap-detector](https://github.com/tom-s/clap-detector) which is more generalized.
 
 ## License
 
