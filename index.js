@@ -37,12 +37,37 @@ const clapDetector = (function() {
         AUDIO_SOURCE: os.type() === "Darwin" // microphone
         ? 'coreaudio default'
         : 'alsa hw:1,0',
+        MAX_HISTORY_LENGTH: 10 // no need to maintain big history
         DETECTION_PERCENTAGE_START : '10%',
         DETECTION_PERCENTAGE_END: '10%',
-        CLAP_AMPLITUDE_THRESHOLD: 0.7,
-        CLAP_ENERGY_THRESHOLD: 0.3,
-        CLAP_MAX_DURATION: 1500,
-        MAX_HISTORY_LENGTH: 10 // no need to maintain big history
+        AUDIO_DETECTION = {
+            MAX_DURATION: null,
+            MIN_DURATION: null,
+            MAX_MAXIMUM_AMPLITUDE: null,
+            MIN_MAXIMUM_AMPLITUDE: null,
+            MAX_MINIMUM_AMPLITUDE: null,
+            MIN_MINIMUM_AMPLITUDE: null,
+            MAX_MID_AMPLITUDE: null,
+            MIN_MID_AMPLITUDE: null,
+            MAX_MEAN_NORM: null,
+            MIN_MEAN_NORM: null,
+            MAX_MEAN_AMPLITUDE: null,
+            MIN_MEAN_AMPLITUDE: null,
+            MIN_RMS_AMPLITUDE: null,
+            MAX_RMS_AMPLITUDE: null,
+            MAX_MAXIMUM_DELTA: null,
+            MIN_MAXIMUM_DELTA: null,
+            MAX_MINIMUM_DELTA: null,
+            MIN_MINIMUM_DELTA: null,
+            MAX_MEAN_DELTA: null,
+            MIN_MEAN_DELTA: null,
+            MAX_RMS_DELTA: null,
+            MIN_RMS_DELTA: null,
+            MAX_FREQUENCY: null,
+            MIN_FREQUENCY: null,
+            MAX_VOLUME_ADJUSTMENT: null,
+            MIN_VOLUME_ADJUSTMENT: null,
+        }
     };
 
     let paused = false;
@@ -120,14 +145,38 @@ const clapDetector = (function() {
         });
     }
 
-    function _isClap(stats) {
+    const checkMinimum(minimum, measuredValue) => minimum === undefined || minimum <= measuredValue;
+    const checkMaximum(maximum, measuredValue) => maximum === undefined || maximum >= measuredValue;
 
-        const duration = stats['Length (seconds)'],
-        rms      = stats['RMS amplitude'],
-        max      = stats['Maximum amplitude'];
-
-        return (duration < CONFIG.CLAP_MAX_DURATION && max > CONFIG.CLAP_AMPLITUDE_THRESHOLD && rms < CONFIG.CLAP_ENERGY_THRESHOLD);
-    }
+    function _isClap(measurements) {
+        const audioDetection = CONFIG.AUDIO_DETECTION;
+        return checkMaximum(audioDetection.MAX_DURATION, measurements.duration)
+            && checkMinimum(audioDetection.MIN_DURATION, measurements.duration)
+            && checkMaximum(audioDetection.MAX_MAXIMUM_AMPLITUDE, measurements.maximumAplitude)
+            && checkMinimum(audioDetection.MIN_MAXIMUM_AMPLITUDE, measurements.maximumAplitude)
+            && checkMaximum(audioDetection.MAX_MINIMUM_AMPLITUDE, measurements.minimumAmplitude)
+            && checkMinimum(audioDetection.MIN_MINIMUM_AMPLITUDE, measurements.minimumAmplitude)
+            && checkMaximum(audioDetection.MAX_MID_AMPLITUDE, measurements.midAmplitude)
+            && checkMinimum(AUDIO_DETECTION.MIN_MID_AMPLITUDE, measurements.midAmplitude)
+            && checkMaximum(AUDIO_DETECTION.MAX_MEAN_NORM, measurements.meanNorm)
+            && checkMinimum(AUDIO_DETECTION.MIN_MEAN_NORM, measurements.meanNorm)
+            && checkMaximum(AUDIO_DETECTION.MAX_MEAN_AMPLITUDE, measurements.meanAmplitude)
+            && checkMinimum(AUDIO_DETECTION.MIN_MEAN_AMPLITUDE, measurements.meanAmplitude)
+            && checkMaximum(AUDIO_DETECTION.MAX_RMS_AMPLITUDE, measurements.rmsAmplitude)
+            && checkMinimum(AUDIO_DETECTION.MIN_RMS_AMPLITUDE, measurements.rmsAmplitude)
+            && checkMaximum(AUDIO_DETECTION.MAX_MAXIMUM_DELTA, measurements.maximumDelta)
+            && checkMinimum(AUDIO_DETECTION.MIN_MAXIMUM_DELTA, measurements.maximumDelta)
+            && checkMaximum(AUDIO_DETECTION.MAX_MINIMUM_DELTA, measurements.minimumDelta)
+            && checkMinimum(AUDIO_DETECTION.MIN_MINIMUM_DELTA, measurements.minimumDelta)
+            && checkMaximum(AUDIO_DETECTION.MAX_MEAN_DELTA, measurements.meanDelta)
+            && checkMinimum(AUDIO_DETECTION.MIN_MEAN_DELTA, measurements.meanDelta)
+            && checkMaximum(AUDIO_DETECTION.MAX_RMS_DELTA, measurements.rmsDelta)
+            && checkMinimum(AUDIO_DETECTION.MIN_RMS_DELTA, measurements.rmsDelta)
+            && checkMaximum(AUDIO_DETECTION.MAX_FREQUENCY, measurements.frequency)
+            && checkMinimum(AUDIO_DETECTION.MIN_FREQUENCY, measurements.frequency)
+            && checkMaximum(AUDIO_DETECTION.MAX_VOLUME_ADJUSTMENT, measurements.volumeAdjustment)
+            && checkMinimum(AUDIO_DETECTION.MIN_VOLUME_ADJUSTMENT, measurements.volumeAdjustment)
+  }
 
     function _parse(body) {
         body = body.replace(new RegExp("[ \\t]+", "g") , " "); //sox use spaces to align output
@@ -137,7 +186,22 @@ const clapDetector = (function() {
         while (match = split.exec(body)) {
             dict[match[1]] = parseFloat(match[2]);
         }
-        return dict;
+
+        return {
+            duration: dict['Length (seconds)'],
+            maximumAplitude: dict['Maximum amplitude'],
+            minimumAmplitude: dict['Minimum amplitude'],
+            midAmplitude: dict['Midline amplitude'],
+            meanNorm: dict['Mean norm'],
+            meanAmplitude: dict['Mean amplitude'],
+            rmsAmplitude: dict['RMS amplitude'],
+            maximumDelta: dict['Maximum delta'],
+            minimumDelta: dict['Minimum delta'],
+            meanDelta: dict['Mean delta'],
+            rmsDelta: dict['RMS delta'],
+            frequency: dict['Rough frequency'],
+            volumeAdjustment: dict['Volume adjustment'],
+        };
     }
 
     function _config(props) {
