@@ -2,19 +2,25 @@
 const clapDetector = require('./index.js');
 
 // Define configuration
-var clapConfig = {};
+var clapConfig = {
+    AUDIO_DETECTION: {
+        MAX_DURATION: 1500,
+        MIN_MAXIMUM_AMPLITUDE: 0.7,
+        MAX_RMS_AMPLITUDE: 0.3,
+    }
+};
 
 // Start clap detection
 clapDetector.start(clapConfig);
 
 // Register on clap event
-clapDetector.onClap(function(history) {
+clapDetector.onDetection(function(history) {
     console.log('your callback code here ');
     console.dir(history);
 });
 
 // Register to a series of 3 claps occuring within 2 seconds
-clapDetector.onClaps(3, 2000, function(delay) {
-    //console.log('your callback code here ');
+clapDetector.onDetections(3, 2000, function(delay) {
+    console.log('your callback code here for multiple claps');
 });
 
